@@ -143,7 +143,7 @@ function startTimer(timerId) {
 
 // === Reset Timer ===
 function resetTimer(timerId) {
-  timers[timerId].remaining = 3 * 3600; // Fixed reset to 3 hours
+  timers[timerId].remaining = 3 * 3600 - 1; // Fixed reset to 2 hours, 59 minutes and 59 seconds
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
   timers[timerId].interval = setInterval(() => {
@@ -206,4 +206,5 @@ function showCategory(category) {
 document.addEventListener("DOMContentLoaded", () => {
   renderCategory(1);
 });
+
 
