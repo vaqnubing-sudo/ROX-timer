@@ -76,22 +76,28 @@ function validateTwoDigit(input) {
 function renderCategory(category) {
   const container = document.getElementById("timerContainer");
 
-  if (!container.querySelector(`.category-${category}`)) {
+  // Hide all existing category divs
+  container.querySelectorAll(":scope > div").forEach(div => {
+    div.style.display = "none";
+  });
+
+  // Check if category already exists
+  let categoryWrapper = container.querySelector(`.category-${category}`);
+  if (!categoryWrapper) {
     const data = category === 1 ? category1Timers : category2Timers;
-    const categoryWrapper = document.createElement("div");
+    categoryWrapper = document.createElement("div");
     categoryWrapper.className = `category-${category}`;
     data.forEach((timerData, index) => {
-      categoryWrapper.appendChild(createTimerElement(timerData, index, category));
+      const timerEl = createTimerElement(timerData, index, category);
+      categoryWrapper.appendChild(timerEl);
     });
     container.appendChild(categoryWrapper);
   }
 
-  container.querySelectorAll(":scope > div").forEach(div => {
-    div.style.display = "none";
-});
+  // Show the active category
+  categoryWrapper.style.display = "block";
 
-  container.querySelector(`.category-${category}`).style.display = "block";
-
+  // Toggle nav buttons
   document.getElementById("cat1Btn").classList.toggle("active", category === 1);
   document.getElementById("cat2Btn").classList.toggle("active", category === 2);
 
@@ -314,5 +320,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
 
 
