@@ -27,17 +27,11 @@ body {
 
 /* ===== Header ===== */
 .app-header {
-  background: var(--primary-gradient);
-  color: white;
-  text-align: center;
-  padding: 18px 0;
-  font-size: 1.6rem;
-  font-weight: 600;
-  box-shadow: var(--shadow);
-  letter-spacing: 1px;
-  position: sticky;
-  top: 0;
-  z-index: 200;
+white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;       /* Keeps some padding inside header */
+  font-size: clamp(1.2rem, 4vw, 1.6rem); /* Shrinks font on smaller screens */
 }
 
 /* ===== Main Container ===== */
@@ -245,4 +239,5 @@ body {
     height: 45px;
   }
 }
+
 
