@@ -1,24 +1,24 @@
 // === Timer Data ===
 const category1Timers = [
-  { name: "Morning Routine", image: "images/img1.png" },
-  { name: "Workout Timer", image: "images/img2.png" },
-  { name: "Study Session", image: "images/img3.png" },
-  { name: "Cooking Timer", image: "images/img4.png" },
-  { name: "Meditation", image: "images/img5.png" },
-  { name: "Reading Timer", image: "images/img6.png" },
-  { name: "Gaming Timer", image: "images/img7.png" },
-  { name: "Other Timer", image: "images/img8.png" }
+  { name: "Phreeoni", image: "images/Phreeoni.png" },
+  { name: "Mistress", image: "images/Mistress.png" },
+  { name: "Eddga", image: "images/Eddga.png" },
+  { name: "Kraken", image: "images/Kraken.png" },
+  { name: "Orc Hero", image: "images/Orc Hero.png" },
+  { name: "Maya", image: "images/Maya.png" },
+  { name: "Pharaoh", image: "images/Pharaoh.png" },
+  { name: "Orc Lord", image: "images/Orc Lord.png" }
 ];
 
 const category2Timers = [
-  { name: "Work Project", image: "images/img9.png" },
-  { name: "Team Meeting", image: "images/img10.png" },
-  { name: "Break Reminder", image: "images/img11.png" },
-  { name: "Client Call", image: "images/img12.png" },
-  { name: "Focus Sprint", image: "images/img13.png" },
-  { name: "Deadline Tracker", image: "images/img14.png" },
-  { name: "Side Hustle", image: "images/img15.png" },
-  { name: "Extra Timer", image: "images/img16.png" }
+  { name: "Eclipse", image: "images/Eclipse.png" },
+  { name: "Dragon Fly", image: "images/Dragonfly.png" },
+  { name: "Ghostring", image: "images/Ghostring.png" },
+  { name: "Mastering", image: "images/Mastering.png" },
+  { name: "Toad", image: "images/Toad.png" },
+  { name: "King Dramoh", image: "images/King Dramoh.png" },
+  { name: "Deviling", image: "images/Deviling.png" },
+  { name: "Angeling", image: "images/Angeling.png" }
 ];
 
 // === Global State ===
@@ -72,12 +72,25 @@ function validateTwoDigit(input) {
 // === Render Category ===
 function renderCategory(category) {
   const container = document.getElementById("timerContainer");
-  container.innerHTML = "";
 
-  const data = category === 1 ? category1Timers : category2Timers;
-  data.forEach((timerData, index) => {
-    container.appendChild(createTimerElement(timerData, index, category));
+  // Check if timers for this category are already created
+  if (!container.querySelector(`.category-${category}`)) {
+    const data = category === 1 ? category1Timers : category2Timers;
+    const categoryWrapper = document.createElement("div");
+    categoryWrapper.className = `category-${category}`;
+    data.forEach((timerData, index) => {
+      categoryWrapper.appendChild(createTimerElement(timerData, index, category));
+    });
+    container.appendChild(categoryWrapper);
+  }
+
+  // Hide all categories
+  container.querySelectorAll("div[id^='timerContainer'] > div").forEach(div => {
+    div.style.display = "none";
   });
+
+  // Show only the active category
+  container.querySelector(`.category-${category}`).style.display = "block";
 
   document.getElementById("cat1Btn").classList.toggle("active", category === 1);
   document.getElementById("cat2Btn").classList.toggle("active", category === 2);
@@ -193,3 +206,4 @@ function showCategory(category) {
 document.addEventListener("DOMContentLoaded", () => {
   renderCategory(1);
 });
+
