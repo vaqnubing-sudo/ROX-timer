@@ -1,6 +1,26 @@
-Notification.requestPermission().then(permission => {
-  console.log(permission); // 'granted', 'denied', or 'default'
-});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(reg => console.log('Service Worker registered', reg))
+    .catch(err => console.log('Service Worker failed', err));
+}
+
+if ('Notification' in window && Notification.permission !== 'granted') {
+  Notification.requestPermission().then(permission => {
+    console.log('Notification permission:', permission);
+  });
+}
+
+function sendNotification(title, body) {
+  if (Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification(title, {
+        body: body,
+        icon: 'icon.png', // optional
+      });
+    });
+  }
+}
+
 
 // === Timer Data ===
 const category1Timers = [
@@ -210,6 +230,7 @@ function showCategory(category) {
 document.addEventListener("DOMContentLoaded", () => {
   renderCategory(1);
 });
+
 
 
 
