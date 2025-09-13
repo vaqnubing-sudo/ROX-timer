@@ -1,7 +1,7 @@
 {
   "name": "ROX Timer",
   "short_name": "ROX Timer",
-  "start_url": "/",
+  "start_url": "/ROX-timer/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
