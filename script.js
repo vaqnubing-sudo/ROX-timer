@@ -1,3 +1,7 @@
+Notification.requestPermission().then(permission => {
+  console.log(permission); // 'granted', 'denied', or 'default'
+});
+
 // === Timer Data ===
 const category1Timers = [
   { name: "Phreeoni", image: "images/Phreeoni.png" },
@@ -206,6 +210,7 @@ function showCategory(category) {
 document.addEventListener("DOMContentLoaded", () => {
   renderCategory(1);
 });
+
 
 
 
