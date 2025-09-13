@@ -25,6 +25,7 @@ const category2Timers = [
 let activeCategory = 1;
 const timers = {};
 let swRegistration = null;
+let wakeLock = null;
 
 // === Create Timer Card ===
 function createTimerElement(timerData, index, category) {
@@ -38,8 +39,7 @@ function createTimerElement(timerData, index, category) {
     image: timerData.image
   };
 
-  // Load saved state if exists
-  loadTimerState(timerId);
+  loadTimerState(timerId); // Load saved state if exists
 
   const card = document.createElement("div");
   card.className = "timer-card";
@@ -129,15 +129,15 @@ function startTimer(timerId) {
     if (remaining <= 0) {
       clearInterval(timers[timerId].interval);
       localStorage.removeItem(timerId);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
+      notifyUser(timers[timerId].name, `${timers[timerId].name} has spawned!`, timers[timerId].image);
       playNotificationSound();
       return;
     }
 
-    if (remaining === 300) {
+    if (remaining === 300) { // 5 min warning
       notifyUser(
         timers[timerId].name,
-        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
+        `5 minutes remaining, ${timers[timerId].name} will spawn soon.`,
         timers[timerId].image
       );
       playNotificationSound();
@@ -172,20 +172,16 @@ function updateDisplay(timerId) {
 function notifyUser(timerName, message, icon) {
   if (!('Notification' in window)) return;
 
+  const options = { body: message, icon: icon || 'images/Phreeoni.png' };
+
   if (Notification.permission === 'granted') {
-    if (swRegistration) {
-      swRegistration.showNotification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
-    } else {
-      new Notification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
-    }
+    if (swRegistration) swRegistration.showNotification(timerName, options);
+    else new Notification(timerName, options);
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
-        if (swRegistration) {
-          swRegistration.showNotification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
-        } else {
-          new Notification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
-        }
+        if (swRegistration) swRegistration.showNotification(timerName, options);
+        else new Notification(timerName, options);
       }
     });
   }
@@ -209,22 +205,37 @@ function saveTimerState(timerId) {
 
 function loadTimerState(timerId) {
   const saved = localStorage.getItem(timerId);
-  if (saved) {
-    const state = JSON.parse(saved);
-    const remaining = Math.max(0, Math.floor((state.endTime - Date.now()) / 1000));
-    timers[timerId].remaining = remaining;
-    timers[timerId].name = state.name;
-    timers[timerId].image = state.image;
-    timers[timerId].endTime = state.endTime;
-    updateDisplay(timerId);
+  if (!saved) return;
 
-    if (remaining > 0) startTimer(timerId);
-  }
+  const state = JSON.parse(saved);
+  const remaining = Math.max(0, Math.floor((state.endTime - Date.now()) / 1000));
+
+  timers[timerId].remaining = remaining;
+  timers[timerId].name = state.name;
+  timers[timerId].image = state.image;
+  timers[timerId].endTime = state.endTime;
+
+  updateDisplay(timerId);
+
+  if (remaining > 0) startTimer(timerId); // resume timer
 }
 
 // === Category Switching ===
 function showCategory(category) {
   renderCategory(category);
+}
+
+// === Request Screen Wake Lock ===
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => console.log('Screen Wake Lock released'));
+      console.log('Screen Wake Lock acquired');
+    } catch (err) {
+      console.error(err);
+    }
+  }
 }
 
 // === Init ===
@@ -242,5 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
     Notification.requestPermission().then(permission => console.log('Notification permission:', permission));
   }
 
+  requestWakeLock();
   renderCategory(1);
 });
