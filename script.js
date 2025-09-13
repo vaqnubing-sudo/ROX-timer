@@ -72,36 +72,36 @@ function validateTwoDigit(input) {
   if (parseInt(input.value || "0") > 59) input.value = "59";
 }
 
-// === Render Category ===
 function renderCategory(category) {
   const container = document.getElementById("timerContainer");
 
-  // Hide all existing category divs
+  // Hide all categories
   container.querySelectorAll(":scope > div").forEach(div => {
     div.style.display = "none";
   });
 
-  // Check if category already exists
+  // Check if category div exists
   let categoryWrapper = container.querySelector(`.category-${category}`);
+  
   if (!categoryWrapper) {
     const data = category === 1 ? category1Timers : category2Timers;
     categoryWrapper = document.createElement("div");
     categoryWrapper.className = `category-${category}`;
+
     data.forEach((timerData, index) => {
       const timerEl = createTimerElement(timerData, index, category);
       categoryWrapper.appendChild(timerEl);
     });
+
     container.appendChild(categoryWrapper);
   }
 
-  // Show the active category
+  // Show the selected category
   categoryWrapper.style.display = "block";
 
   // Toggle nav buttons
   document.getElementById("cat1Btn").classList.toggle("active", category === 1);
   document.getElementById("cat2Btn").classList.toggle("active", category === 2);
-
-  activeCategory = category;
 }
 
 // === Start Timer ===
@@ -320,6 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
 
 
 
