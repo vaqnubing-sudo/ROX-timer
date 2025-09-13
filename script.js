@@ -100,10 +100,10 @@ function startTimer(timerId) {
 
   timers[timerId].remaining = totalSeconds;
 
-  // Clear inputs when timer starts
-  hours.value = "";
-  minutes.value = "";
-  seconds.value = "";
+  // Reset the Inputs to 00:00:00
+  hours.value = "00";
+  minutes.value = "00";
+  seconds.value = "00";
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
@@ -192,4 +192,5 @@ function showCategory(category) {
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
   renderCategory(1);
+
 });
