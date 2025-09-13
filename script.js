@@ -240,6 +240,7 @@ async function requestWakeLock() {
 
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
+  // --- Service Worker Registration ---
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => {
@@ -249,10 +250,40 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(err => console.log('Service Worker registration failed:', err));
   }
 
+  // --- Notification Permission ---
   if ('Notification' in window && Notification.permission !== 'granted') {
     Notification.requestPermission().then(permission => console.log('Notification permission:', permission));
   }
 
+  // --- Keep screen awake (optional) ---
   requestWakeLock();
+
+  // --- Render initial category / timers ---
   renderCategory(1);
+
+  // --- PWA Install Button ---
+  let deferredPrompt;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // Prevent automatic prompt
+    deferredPrompt = e;
+
+    const installBtn = document.getElementById('installBtn');
+    if (installBtn) installBtn.style.display = 'block';
+  });
+
+  const installBtn = document.getElementById('installBtn');
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt(); // Show install prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('User response to install:', outcome);
+      deferredPrompt = null;
+
+      installBtn.style.display = 'none'; // hide button after prompt
+    });
+  }
 });
+
