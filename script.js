@@ -86,9 +86,9 @@ function renderCategory(category) {
     container.appendChild(categoryWrapper);
   }
 
-  container.querySelectorAll("div[id^='timerContainer'] > div").forEach(div => {
+  container.querySelectorAll(":scope > div").forEach(div => {
     div.style.display = "none";
-  });
+});
 
   container.querySelector(`.category-${category}`).style.display = "block";
 
@@ -149,14 +149,42 @@ function startTimer(timerId) {
   updateDisplay(timerId);
 }
 
-// === Reset Timer ===
 function resetTimer(timerId) {
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
-  timers[timerId].endTime = Date.now() + 3 * 3599 * 1000; // 2h59m59s
+
+  timers[timerId].remaining = 3 * 3600; // 3 hours in seconds
+  timers[timerId].endTime = Date.now() + timers[timerId].remaining * 1000;
+
+  updateDisplay(timerId);
   saveTimerState(timerId);
 
-  startTimer(timerId); // restart interval
+  // Restart interval
+  timers[timerId].interval = setInterval(() => {
+    const remaining = Math.max(0, Math.floor((timers[timerId].endTime - Date.now()) / 1000));
+    timers[timerId].remaining = remaining;
+    updateDisplay(timerId);
+
+    if (remaining <= 0) {
+      clearInterval(timers[timerId].interval);
+      localStorage.removeItem(timerId);
+      notifyUser(timers[timerId].name, `${timers[timerId].name} has spawned!`, timers[timerId].image);
+      playNotificationSound();
+      return;
+    }
+
+    if (remaining === 300) { // 5 min warning
+      notifyUser(
+        timers[timerId].name,
+        `5 minutes remaining, ${timers[timerId].name} will spawn soon.`,
+        timers[timerId].image
+      );
+      playNotificationSound();
+    }
+
+    saveTimerState(timerId);
+  }, 1000);
 }
+
 
 // === Update Display ===
 function updateDisplay(timerId) {
@@ -286,4 +314,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
 
