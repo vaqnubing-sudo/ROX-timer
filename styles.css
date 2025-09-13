@@ -202,6 +202,38 @@ body {
   color: var(--primary);
 }
 
+/* ===== Category Tabs ===== */
+.category-tabs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.category-tabs button {
+  flex: 1;
+  padding: 15px 30px;           /* Bigger touch area */
+  border: none;
+  border-radius: 12px;
+  background: var(--primary-gradient);
+  color: white;
+  font-size: 1.2rem;            /* Larger text for readability */
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, background 0.3s ease;
+  max-width: 220px;             /* Prevent overly large buttons */
+}
+
+.category-tabs button:hover {
+  transform: translateY(-2px);
+}
+
+.category-tabs button.active {
+  background: #388E3C; /* Slightly darker for active category */
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
   .timer-image {
@@ -213,3 +245,4 @@ body {
     height: 45px;
   }
 }
+
