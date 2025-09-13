@@ -1,27 +1,3 @@
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(reg => console.log('Service Worker registered', reg))
-    .catch(err => console.log('Service Worker failed', err));
-}
-
-if ('Notification' in window && Notification.permission !== 'granted') {
-  Notification.requestPermission().then(permission => {
-    console.log('Notification permission:', permission);
-  });
-}
-
-function sendNotification(title, body) {
-  if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(registration => {
-      registration.showNotification(title, {
-        body: body,
-        icon: 'icon.png', // optional
-      });
-    });
-  }
-}
-
-
 // === Timer Data ===
 const category1Timers = [
   { name: "Phreeoni", image: "images/Phreeoni.png" },
@@ -203,18 +179,28 @@ function updateDisplay(timerId) {
 
 // === Notifications ===
 function notifyUser(timerName, message) {
-  if (!("Notification" in window)) return;
+  if (!('Notification' in window)) return;
 
-  if (Notification.permission === "granted") {
-    new Notification(timerName, { body: message });
-  } else if (Notification.permission !== "denied") {
+  if (Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification(timerName, {
+        body: message,
+      });
+    });
+  } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        new Notification(timerName, { body: message });
+      if (permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(timerName, {
+            body: message,
+            icon: 'images/Phreeoni.png',
+          });
+        });
       }
     });
   }
 }
+
 
 function playNotificationSound() {
   const sound = document.getElementById("notificationSound");
@@ -228,8 +214,24 @@ function showCategory(category) {
 
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(err => console.log('Service Worker registration failed:', err));
+  }
+
+  // Request Notification Permission
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission().then(permission => {
+      console.log('Notification permission:', permission);
+    });
+  }
+
+  // Render the first category
   renderCategory(1);
 });
+
 
 
 
