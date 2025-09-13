@@ -38,11 +38,6 @@ body {
   position: sticky;
   top: 0;
   z-index: 200;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 90%;       /* Keeps some padding inside header */
-  font-size: clamp(1.2rem, 4vw, 1.6rem); /* Shrinks font on smaller screens */
 }
 
 /* ===== Main Container ===== */
@@ -250,6 +245,7 @@ body {
     height: 45px;
   }
 }
+
 
 
 
