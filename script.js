@@ -24,15 +24,22 @@ const category2Timers = [
 // === Global State ===
 let activeCategory = 1;
 const timers = {};
+let swRegistration = null;
 
 // === Create Timer Card ===
 function createTimerElement(timerData, index, category) {
   const timerId = `timer-${category}-${index}`;
+
+  // Initialize timer object
   timers[timerId] = {
     interval: null,
     remaining: 0,
-    name: timerData.name
+    name: timerData.name,
+    image: timerData.image
   };
+
+  // Load saved state if exists
+  loadTimerState(timerId);
 
   const card = document.createElement("div");
   card.className = "timer-card";
@@ -58,22 +65,17 @@ function createTimerElement(timerData, index, category) {
   return card;
 }
 
-// === Validate Minutes and Seconds (Two-Digit Limit, no auto zero) ===
+// === Validate Minutes and Seconds ===
 function validateTwoDigit(input) {
-  input.value = input.value.replace(/\D/g, ""); // Remove non-numeric characters
-  if (input.value.length > 2) {
-    input.value = input.value.slice(0, 2);
-  }
-  if (parseInt(input.value || "0") > 59) {
-    input.value = "59";
-  }
+  input.value = input.value.replace(/\D/g, "");
+  if (input.value.length > 2) input.value = input.value.slice(0, 2);
+  if (parseInt(input.value || "0") > 59) input.value = "59";
 }
 
 // === Render Category ===
 function renderCategory(category) {
   const container = document.getElementById("timerContainer");
 
-  // Check if timers for this category are already created
   if (!container.querySelector(`.category-${category}`)) {
     const data = category === 1 ? category1Timers : category2Timers;
     const categoryWrapper = document.createElement("div");
@@ -84,12 +86,10 @@ function renderCategory(category) {
     container.appendChild(categoryWrapper);
   }
 
-  // Hide all categories
   container.querySelectorAll("div[id^='timerContainer'] > div").forEach(div => {
     div.style.display = "none";
   });
 
-  // Show only the active category
   container.querySelector(`.category-${category}`).style.display = "block";
 
   document.getElementById("cat1Btn").classList.toggle("active", category === 1);
@@ -104,16 +104,17 @@ function startTimer(timerId) {
   const minutes = document.getElementById(`${timerId}-minutes`);
   const seconds = document.getElementById(`${timerId}-seconds`);
 
-  let totalSeconds =
+  const totalSeconds =
     parseInt(hours.value || "0") * 3600 +
     parseInt(minutes.value || "0") * 60 +
     parseInt(seconds.value || "0");
 
   if (totalSeconds <= 0) return;
 
-  timers[timerId].remaining = totalSeconds;
+  // Set end timestamp
+  timers[timerId].endTime = Date.now() + totalSeconds * 1000;
+  saveTimerState(timerId);
 
-  // Reset inputs to 00:00:00 when timer starts
   hours.value = "00";
   minutes.value = "00";
   seconds.value = "00";
@@ -121,21 +122,28 @@ function startTimer(timerId) {
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
   timers[timerId].interval = setInterval(() => {
-    timers[timerId].remaining--;
+    const remaining = Math.max(0, Math.floor((timers[timerId].endTime - Date.now()) / 1000));
+    timers[timerId].remaining = remaining;
+    updateDisplay(timerId);
 
-    if (timers[timerId].remaining < 0) {
+    if (remaining <= 0) {
       clearInterval(timers[timerId].interval);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`);
+      localStorage.removeItem(timerId);
+      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
       playNotificationSound();
       return;
     }
 
-    if (timers[timerId].remaining === 300) {
-      notifyUser(timers[timerId].name, `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`);
+    if (remaining === 300) {
+      notifyUser(
+        timers[timerId].name,
+        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
+        timers[timerId].image
+      );
       playNotificationSound();
     }
 
-    updateDisplay(timerId);
+    saveTimerState(timerId);
   }, 1000);
 
   updateDisplay(timerId);
@@ -143,28 +151,11 @@ function startTimer(timerId) {
 
 // === Reset Timer ===
 function resetTimer(timerId) {
-  timers[timerId].remaining = 3 * 3599; // Fixed reset to 2 hours, 59 minutes and 59 seconds
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
+  timers[timerId].endTime = Date.now() + 3 * 3599 * 1000; // 2h59m59s
+  saveTimerState(timerId);
 
-  timers[timerId].interval = setInterval(() => {
-    timers[timerId].remaining--;
-
-    if (timers[timerId].remaining < 0) {
-      clearInterval(timers[timerId].interval);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`);
-      playNotificationSound();
-      return;
-    }
-
-    if (timers[timerId].remaining === 300) {
-      notifyUser(timers[timerId].name, `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`);
-      playNotificationSound();
-    }
-
-    updateDisplay(timerId);
-  }, 1000);
-
-  updateDisplay(timerId);
+  startTimer(timerId); // restart interval
 }
 
 // === Update Display ===
@@ -174,37 +165,61 @@ function updateDisplay(timerId) {
   const m = Math.floor((timers[timerId].remaining % 3600) / 60);
   const s = timers[timerId].remaining % 60;
 
-  display.textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  display.textContent = `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
 // === Notifications ===
-function notifyUser(timerName, message) {
+function notifyUser(timerName, message, icon) {
   if (!('Notification' in window)) return;
 
   if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(registration => {
-      registration.showNotification(timerName, {
-        body: message,
-      });
-    });
+    if (swRegistration) {
+      swRegistration.showNotification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
+    } else {
+      new Notification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
+    }
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification(timerName, {
-            body: message,
-            icon: 'images/Phreeoni.png',
-          });
-        });
+        if (swRegistration) {
+          swRegistration.showNotification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
+        } else {
+          new Notification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
+        }
       }
     });
   }
 }
 
-
+// === Play Notification Sound ===
 function playNotificationSound() {
   const sound = document.getElementById("notificationSound");
-  sound.play();
+  if (sound) sound.play();
+}
+
+// === Save / Load Timer State ===
+function saveTimerState(timerId) {
+  const state = {
+    endTime: timers[timerId].endTime,
+    name: timers[timerId].name,
+    image: timers[timerId].image
+  };
+  localStorage.setItem(timerId, JSON.stringify(state));
+}
+
+function loadTimerState(timerId) {
+  const saved = localStorage.getItem(timerId);
+  if (saved) {
+    const state = JSON.parse(saved);
+    const remaining = Math.max(0, Math.floor((state.endTime - Date.now()) / 1000));
+    timers[timerId].remaining = remaining;
+    timers[timerId].name = state.name;
+    timers[timerId].image = state.image;
+    timers[timerId].endTime = state.endTime;
+    updateDisplay(timerId);
+
+    if (remaining > 0) startTimer(timerId);
+  }
 }
 
 // === Category Switching ===
@@ -214,26 +229,18 @@ function showCategory(category) {
 
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
-  // Register Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('Service Worker registered'))
+      .then(reg => {
+        console.log('Service Worker registered');
+        swRegistration = reg;
+      })
       .catch(err => console.log('Service Worker registration failed:', err));
   }
 
-  // Request Notification Permission
   if ('Notification' in window && Notification.permission !== 'granted') {
-    Notification.requestPermission().then(permission => {
-      console.log('Notification permission:', permission);
-    });
+    Notification.requestPermission().then(permission => console.log('Notification permission:', permission));
   }
 
-  // Render the first category
   renderCategory(1);
 });
-
-
-
-
-
-
