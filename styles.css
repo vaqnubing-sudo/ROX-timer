@@ -27,18 +27,28 @@ body {
 
 /* ===== Header ===== */
 .app-header {
-  background: var(--primary-gradient);
+  background: var(--primary-gradient); /* Keep the green gradient */
   color: white;
   text-align: center;
-  padding: 18px 0;
-  font-size: 1.6rem;
+  padding: 18px 10px;   /* Slight horizontal padding for mobile */
+  font-size: clamp(1.4rem, 4vw, 1.6rem); /* Responsive font size */
   font-weight: 600;
   box-shadow: var(--shadow);
   letter-spacing: 1px;
   position: sticky;
   top: 0;
   z-index: 200;
+  overflow: hidden;     /* Prevent overflow if text is too long */
 }
+
+.app-header h1 {
+  margin: 0;
+  white-space: nowrap;      /* Prevent line breaks */
+  overflow: hidden;         /* Hide overflowed text */
+  text-overflow: ellipsis;  /* Show "..." if text is too long */
+  color: white;
+}
+
 
 /* ===== Main Container ===== */
 .container {
@@ -245,6 +255,7 @@ body {
     height: 45px;
   }
 }
+
 
 
 
