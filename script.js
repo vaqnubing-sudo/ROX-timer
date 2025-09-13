@@ -100,7 +100,7 @@ function startTimer(timerId) {
 
   timers[timerId].remaining = totalSeconds;
 
-  // Reset the Inputs to 00:00:00
+  // Reset inputs to 00:00:00 when timer starts
   hours.value = "00";
   minutes.value = "00";
   seconds.value = "00";
@@ -192,5 +192,4 @@ function showCategory(category) {
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
   renderCategory(1);
-
 });
