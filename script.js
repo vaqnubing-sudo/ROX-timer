@@ -32,10 +32,9 @@ function createTimerElement(timerData, index, category) {
   timers[timerId] = {
     interval: null,
     remaining: 0,
-    endTime: null,         // NEW: absolute end timestamp
-    notified5min: false,   // NEW: prevent duplicate 5-min alerts
     name: timerData.name,
-    image: timerData.image
+    image: timerData.image,
+    category: category
   };
 
   const card = document.createElement("div");
@@ -97,20 +96,38 @@ function renderCategory(category) {
   activeCategory = category;
 }
 
-// === Helper: Start interval ===
-function _beginInterval(timerId) {
+// === Start Timer ===
+function startTimer(timerId) {
+  const hours = document.getElementById(`${timerId}-hours`);
+  const minutes = document.getElementById(`${timerId}-minutes`);
+  const seconds = document.getElementById(`${timerId}-seconds`);
+
+  let totalSeconds =
+    parseInt(hours.value || "0") * 3600 +
+    parseInt(minutes.value || "0") * 60 +
+    parseInt(seconds.value || "0");
+
+  if (totalSeconds <= 0) return;
+
+  timers[timerId].remaining = totalSeconds;
+
+  hours.value = "00";
+  minutes.value = "00";
+  seconds.value = "00";
+
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
   timers[timerId].interval = setInterval(() => {
-    if (!timers[timerId].endTime) return;
+    timers[timerId].remaining--;
 
-    const remainingMs = timers[timerId].endTime - Date.now();
-    const remaining = Math.max(0, Math.ceil(remainingMs / 1000)); // in seconds
-    timers[timerId].remaining = remaining;
+    if (timers[timerId].remaining < 0) {
+      clearInterval(timers[timerId].interval);
+      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
+      playNotificationSound();
+      return;
+    }
 
-    // 5-minute warning
-    if (!timers[timerId].notified5min && remaining <= 300 && remaining > 0) {
-      timers[timerId].notified5min = true;
+    if (timers[timerId].remaining === 300) {
       notifyUser(
         timers[timerId].name,
         `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
@@ -120,45 +137,18 @@ function _beginInterval(timerId) {
     }
 
     updateDisplay(timerId);
-
-    // When timer finishes
-    if (remaining <= 0) {
-      clearInterval(timers[timerId].interval);
-      timers[timerId].interval = null;
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
-      playNotificationSound();
-    }
   }, 1000);
 
   updateDisplay(timerId);
 }
 
-// === Start Timer ===
-function startTimer(timerId) {
-  const hours = document.getElementById(`${timerId}-hours`);
-  const minutes = document.getElementById(`${timerId}-minutes`);
-  const seconds = document.getElementById(`${timerId}-seconds`);
-
-  const totalSeconds =
-    (parseInt(hours.value || "0", 10) * 3600) +
-    (parseInt(minutes.value || "0", 10) * 60) +
-    (parseInt(seconds.value || "0", 10));
-
-  if (totalSeconds <= 0) return;
-
-  timers[timerId].endTime = Date.now() + totalSeconds * 1000;
-  timers[timerId].notified5min = false;
-
-  hours.value = "00";
-  minutes.value = "00";
-  seconds.value = "00";
-
-  _beginInterval(timerId);
-}
-
 // === Reset Timer ===
 function resetTimer(timerId) {
-  timers[timerId].remaining = 7175; // 1h59m35s
+  // MVP = Category 1 = 2:59:50 = 10790 seconds
+  // Mini = Category 2 = 1:59:50 = 7190 seconds
+  const defaultTime = timers[timerId].category === 1 ? 10790 : 7190;
+  timers[timerId].remaining = defaultTime;
+
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
   timers[timerId].interval = setInterval(() => {
@@ -189,17 +179,9 @@ function resetTimer(timerId) {
 // === Update Display ===
 function updateDisplay(timerId) {
   const display = document.getElementById(`${timerId}-display`);
-  if (!display) return;
-
-  let remaining = timers[timerId].remaining;
-  if (timers[timerId].endTime) {
-    remaining = Math.max(0, Math.ceil((timers[timerId].endTime - Date.now()) / 1000));
-    timers[timerId].remaining = remaining;
-  }
-
-  const h = Math.floor(remaining / 3600);
-  const m = Math.floor((remaining % 3600) / 60);
-  const s = remaining % 60;
+  const h = Math.floor(timers[timerId].remaining / 3600);
+  const m = Math.floor((timers[timerId].remaining % 3600) / 60);
+  const s = timers[timerId].remaining % 60;
 
   display.textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
@@ -260,20 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Keep display synced when tab becomes visible again
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      Object.keys(timers).forEach(id => {
-        if (timers[id].endTime) {
-          timers[id].remaining = Math.max(0, Math.ceil((timers[id].endTime - Date.now()) / 1000));
-          updateDisplay(id);
-        }
-      });
-    }
-  });
-
   // Render first category
   renderCategory(1);
 });
-
-
