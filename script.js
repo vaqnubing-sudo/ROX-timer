@@ -34,7 +34,9 @@ function createTimerElement(timerData, index, category) {
     remaining: 0,
     name: timerData.name,
     image: timerData.image,
-    category: category
+    category: category,
+    notified5min: false,
+    notified30s: false
   };
 
   const card = document.createElement("div");
@@ -110,6 +112,8 @@ function startTimer(timerId) {
   if (totalSeconds <= 0) return;
 
   timers[timerId].remaining = totalSeconds;
+  timers[timerId].notified5min = false;
+  timers[timerId].notified30s = false;
 
   hours.value = "00";
   minutes.value = "00";
@@ -127,10 +131,21 @@ function startTimer(timerId) {
       return;
     }
 
-    if (timers[timerId].remaining === 300) {
+    if (!timers[timerId].notified5min && timers[timerId].remaining === 300) {
+      timers[timerId].notified5min = true;
       notifyUser(
         timers[timerId].name,
         `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
+        timers[timerId].image
+      );
+      playNotificationSound();
+    }
+
+    if (!timers[timerId].notified30s && timers[timerId].remaining === 30) {
+      timers[timerId].notified30s = true;
+      notifyUser(
+        timers[timerId].name,
+        `30 seconds remaining, the ${timers[timerId].name} will spawn very soon!`,
         timers[timerId].image
       );
       playNotificationSound();
@@ -148,6 +163,8 @@ function resetTimer(timerId) {
   // Mini = Category 2 = 1:59:50 = 7190 seconds
   const defaultTime = timers[timerId].category === 1 ? 10790 : 7190;
   timers[timerId].remaining = defaultTime;
+  timers[timerId].notified5min = false;
+  timers[timerId].notified30s = false;
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
@@ -161,10 +178,21 @@ function resetTimer(timerId) {
       return;
     }
 
-    if (timers[timerId].remaining === 300) {
+    if (!timers[timerId].notified5min && timers[timerId].remaining === 300) {
+      timers[timerId].notified5min = true;
       notifyUser(
         timers[timerId].name,
         `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
+        timers[timerId].image
+      );
+      playNotificationSound();
+    }
+
+    if (!timers[timerId].notified30s && timers[timerId].remaining === 30) {
+      timers[timerId].notified30s = true;
+      notifyUser(
+        timers[timerId].name,
+        `30 seconds remaining, the ${timers[timerId].name} will spawn very soon!`,
         timers[timerId].image
       );
       playNotificationSound();
