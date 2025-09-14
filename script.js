@@ -157,9 +157,9 @@ function startTimer(timerId) {
 }
 
 // === Reset Timer ===
-// FIXED: Now defaults to 2:59:30
+// FIXED: Now defaults to 1:59:35
 function resetTimer(timerId) {
-  const defaultSeconds = (2 * 3600) + (59 * 60) + 30; // 2:59:30 = 10,770 seconds
+  const defaultSeconds = (1 * 3600) + (59 * 60) + 35; // 1:59:35
   timers[timerId].endTime = Date.now() + defaultSeconds * 1000;
   timers[timerId].notified5min = false;
 
@@ -255,3 +255,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // Render first category
   renderCategory(1);
 });
+
