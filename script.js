@@ -157,13 +157,33 @@ function startTimer(timerId) {
 }
 
 // === Reset Timer ===
-// FIXED: Now defaults to 1:59:35
 function resetTimer(timerId) {
-  const defaultSeconds = (1 * 3600) + (59 * 60) + 35; // 1:59:35
-  timers[timerId].endTime = Date.now() + defaultSeconds * 1000;
-  timers[timerId].notified5min = false;
+  timers[timerId].remaining = 7175; // 1h59m35s
+  if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  _beginInterval(timerId);
+  timers[timerId].interval = setInterval(() => {
+    timers[timerId].remaining--;
+
+    if (timers[timerId].remaining < 0) {
+      clearInterval(timers[timerId].interval);
+      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
+      playNotificationSound();
+      return;
+    }
+
+    if (timers[timerId].remaining === 300) {
+      notifyUser(
+        timers[timerId].name,
+        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
+        timers[timerId].image
+      );
+      playNotificationSound();
+    }
+
+    updateDisplay(timerId);
+  }, 1000);
+
+  updateDisplay(timerId);
 }
 
 // === Update Display ===
@@ -255,4 +275,5 @@ document.addEventListener("DOMContentLoaded", () => {
   // Render first category
   renderCategory(1);
 });
+
 
