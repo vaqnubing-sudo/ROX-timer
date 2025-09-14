@@ -32,6 +32,8 @@ function createTimerElement(timerData, index, category) {
   timers[timerId] = {
     interval: null,
     remaining: 0,
+    endTime: null,         // NEW: absolute end timestamp
+    notified5min: false,   // NEW: prevent duplicate 5-min alerts
     name: timerData.name,
     image: timerData.image
   };
@@ -95,88 +97,89 @@ function renderCategory(category) {
   activeCategory = category;
 }
 
+// === Helper: Start interval ===
+function _beginInterval(timerId) {
+  if (timers[timerId].interval) clearInterval(timers[timerId].interval);
+
+  timers[timerId].interval = setInterval(() => {
+    if (!timers[timerId].endTime) return;
+
+    const remainingMs = timers[timerId].endTime - Date.now();
+    const remaining = Math.max(0, Math.ceil(remainingMs / 1000)); // in seconds
+    timers[timerId].remaining = remaining;
+
+    // 5-minute warning
+    if (!timers[timerId].notified5min && remaining <= 300 && remaining > 0) {
+      timers[timerId].notified5min = true;
+      notifyUser(
+        timers[timerId].name,
+        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
+        timers[timerId].image
+      );
+      playNotificationSound();
+    }
+
+    updateDisplay(timerId);
+
+    // When timer finishes
+    if (remaining <= 0) {
+      clearInterval(timers[timerId].interval);
+      timers[timerId].interval = null;
+      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
+      playNotificationSound();
+    }
+  }, 1000);
+
+  updateDisplay(timerId);
+}
+
 // === Start Timer ===
 function startTimer(timerId) {
   const hours = document.getElementById(`${timerId}-hours`);
   const minutes = document.getElementById(`${timerId}-minutes`);
   const seconds = document.getElementById(`${timerId}-seconds`);
 
-  let totalSeconds =
-    parseInt(hours.value || "0") * 3600 +
-    parseInt(minutes.value || "0") * 60 +
-    parseInt(seconds.value || "0");
+  const totalSeconds =
+    (parseInt(hours.value || "0", 10) * 3600) +
+    (parseInt(minutes.value || "0", 10) * 60) +
+    (parseInt(seconds.value || "0", 10));
 
   if (totalSeconds <= 0) return;
 
-  timers[timerId].remaining = totalSeconds;
+  timers[timerId].endTime = Date.now() + totalSeconds * 1000;
+  timers[timerId].notified5min = false;
 
   hours.value = "00";
   minutes.value = "00";
   seconds.value = "00";
 
-  if (timers[timerId].interval) clearInterval(timers[timerId].interval);
-
-  timers[timerId].interval = setInterval(() => {
-    timers[timerId].remaining--;
-
-    if (timers[timerId].remaining < 0) {
-      clearInterval(timers[timerId].interval);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
-      playNotificationSound();
-      return;
-    }
-
-    if (timers[timerId].remaining === 300) {
-      notifyUser(
-        timers[timerId].name,
-        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
-        timers[timerId].image
-      );
-      playNotificationSound();
-    }
-
-    updateDisplay(timerId);
-  }, 1000);
-
-  updateDisplay(timerId);
+  _beginInterval(timerId);
 }
 
 // === Reset Timer ===
+// FIXED: Now defaults to 2:59:30
 function resetTimer(timerId) {
-  timers[timerId].remaining = 3 * 3599; // 2h59m59s
-  if (timers[timerId].interval) clearInterval(timers[timerId].interval);
+  const defaultSeconds = (2 * 3600) + (59 * 60) + 30; // 2:59:30 = 10,770 seconds
+  timers[timerId].endTime = Date.now() + defaultSeconds * 1000;
+  timers[timerId].notified5min = false;
 
-  timers[timerId].interval = setInterval(() => {
-    timers[timerId].remaining--;
-
-    if (timers[timerId].remaining < 0) {
-      clearInterval(timers[timerId].interval);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
-      playNotificationSound();
-      return;
-    }
-
-    if (timers[timerId].remaining === 300) {
-      notifyUser(
-        timers[timerId].name,
-        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
-        timers[timerId].image
-      );
-      playNotificationSound();
-    }
-
-    updateDisplay(timerId);
-  }, 1000);
-
-  updateDisplay(timerId);
+  _beginInterval(timerId);
 }
 
 // === Update Display ===
 function updateDisplay(timerId) {
   const display = document.getElementById(`${timerId}-display`);
-  const h = Math.floor(timers[timerId].remaining / 3600);
-  const m = Math.floor((timers[timerId].remaining % 3600) / 60);
-  const s = timers[timerId].remaining % 60;
+  if (!display) return;
+
+  let remaining = timers[timerId].remaining;
+  if (timers[timerId].endTime) {
+    remaining = Math.max(0, Math.ceil((timers[timerId].endTime - Date.now()) / 1000));
+    timers[timerId].remaining = remaining;
+  }
+
+  const h = Math.floor(remaining / 3600);
+  const m = Math.floor((remaining % 3600) / 60);
+  const s = remaining % 60;
 
   display.textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
@@ -236,6 +239,18 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log('Notification permission:', permission);
     });
   }
+
+  // Keep display synced when tab becomes visible again
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      Object.keys(timers).forEach(id => {
+        if (timers[id].endTime) {
+          timers[id].remaining = Math.max(0, Math.ceil((timers[id].endTime - Date.now()) / 1000));
+          updateDisplay(id);
+        }
+      });
+    }
+  });
 
   // Render first category
   renderCategory(1);
