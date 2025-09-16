@@ -120,8 +120,10 @@ function startTimer(timerId) {
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  timers[timerId].interval = setInterval(() => updateTimer(timerId), 500);
-  updateTimer(timerId);
+  // Delay first decrement by 1 second to fix the 1-second ahead issue
+  timers[timerId].interval = setInterval(() => updateTimer(timerId), 1000);
+  updateTimer(timerId); // Initial display update
+
 }
 
 // === Reset Timer ===
@@ -135,8 +137,10 @@ function resetTimer(timerId) {
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  timers[timerId].interval = setInterval(() => updateTimer(timerId), 500);
-  updateTimer(timerId);
+  // Delay first decrement by 1 second to fix the 1-second ahead issue
+  timers[timerId].interval = setInterval(() => updateTimer(timerId), 1000);
+  updateTimer(timerId); // Initial display update
+
 }
 
 // === Update Timer ===
@@ -228,3 +232,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // Render initial category
   renderCategory(1);
 });
+
