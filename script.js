@@ -24,17 +24,18 @@ const category2Timers = [
 // === Global State ===
 let activeCategory = 1;
 const timers = {};
-let swRegistration = null; // Global Service Worker registration
+let swRegistration = null; // Service Worker Registration
 
 // === Create Timer Card ===
 function createTimerElement(timerData, index, category) {
   const timerId = `timer-${category}-${index}`;
   timers[timerId] = {
-    interval: null,
+    endTime: null,
     remaining: 0,
     name: timerData.name,
     image: timerData.image,
     category: category,
+    interval: null,
     notified5min: false,
     notified30s: false
   };
@@ -49,11 +50,11 @@ function createTimerElement(timerData, index, category) {
     </div>
     <div class="timer-display" id="${timerId}-display">00:00:00</div>
     <div class="timer-inputs">
-      <input type="number" id="${timerId}-hours" min="0" value="">
+      <input type="number" id="${timerId}-hours" min="0" placeholder="HH">
       :
-      <input type="number" id="${timerId}-minutes" min="0" max="59" value="" oninput="validateTwoDigit(this)">
+      <input type="number" id="${timerId}-minutes" min="0" max="59" placeholder="MM" oninput="validateTwoDigit(this)">
       :
-      <input type="number" id="${timerId}-seconds" min="0" max="59" value="" oninput="validateTwoDigit(this)">
+      <input type="number" id="${timerId}-seconds" min="0" max="59" placeholder="SS" oninput="validateTwoDigit(this)">
     </div>
     <div class="timer-buttons">
       <button class="start-btn" onclick="startTimer('${timerId}')">Start</button>
@@ -100,141 +101,95 @@ function renderCategory(category) {
 
 // === Start Timer ===
 function startTimer(timerId) {
-  const hours = document.getElementById(`${timerId}-hours`);
-  const minutes = document.getElementById(`${timerId}-minutes`);
-  const seconds = document.getElementById(`${timerId}-seconds`);
+  const hours = parseInt(document.getElementById(`${timerId}-hours`).value || "0");
+  const minutes = parseInt(document.getElementById(`${timerId}-minutes`).value || "0");
+  const seconds = parseInt(document.getElementById(`${timerId}-seconds`).value || "0");
 
-  let totalSeconds =
-    parseInt(hours.value || "0") * 3600 +
-    parseInt(minutes.value || "0") * 60 +
-    parseInt(seconds.value || "0");
-
+  let totalSeconds = hours * 3600 + minutes * 60 + seconds;
   if (totalSeconds <= 0) return;
 
-  timers[timerId].remaining = totalSeconds;
+  const now = Date.now();
+  timers[timerId].endTime = now + totalSeconds * 1000;
   timers[timerId].notified5min = false;
   timers[timerId].notified30s = false;
 
-  hours.value = "";
-  minutes.value = "";
-  seconds.value = "";
+  // Clear fields after start
+  document.getElementById(`${timerId}-hours`).value = "";
+  document.getElementById(`${timerId}-minutes`).value = "";
+  document.getElementById(`${timerId}-seconds`).value = "";
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  timers[timerId].interval = setInterval(() => {
-    timers[timerId].remaining--;
-
-    if (timers[timerId].remaining < 0) {
-      clearInterval(timers[timerId].interval);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
-      playNotificationSound();
-      return;
-    }
-
-    if (!timers[timerId].notified5min && timers[timerId].remaining === 300) {
-      timers[timerId].notified5min = true;
-      notifyUser(
-        timers[timerId].name,
-        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
-        timers[timerId].image
-      );
-      playNotificationSound();
-    }
-
-    if (!timers[timerId].notified30s && timers[timerId].remaining === 30) {
-      timers[timerId].notified30s = true;
-      notifyUser(
-        timers[timerId].name,
-        `30 seconds remaining, the ${timers[timerId].name} will spawn very soon!`,
-        timers[timerId].image
-      );
-      playNotificationSound();
-    }
-
-    updateDisplay(timerId);
-  }, 1000);
-
-  updateDisplay(timerId);
+  timers[timerId].interval = setInterval(() => updateTimer(timerId), 500);
+  updateTimer(timerId);
 }
 
 // === Reset Timer ===
 function resetTimer(timerId) {
-  // MVP = Category 1 = 2:59:50 = 10790 seconds
-  // Mini = Category 2 = 1:59:50 = 7190 seconds
-  const defaultTime = timers[timerId].category === 1 ? 10790 : 7190;
-  timers[timerId].remaining = defaultTime;
+  // MVP (Category 1) = 2:59:50 = 10790 seconds
+  // Mini (Category 2) = 1:59:50 = 7190 seconds
+  const defaultSeconds = timers[timerId].category === 1 ? 10790 : 7190;
+  timers[timerId].endTime = Date.now() + defaultSeconds * 1000;
   timers[timerId].notified5min = false;
   timers[timerId].notified30s = false;
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  timers[timerId].interval = setInterval(() => {
-    timers[timerId].remaining--;
-
-    if (timers[timerId].remaining < 0) {
-      clearInterval(timers[timerId].interval);
-      notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
-      playNotificationSound();
-      return;
-    }
-
-    if (!timers[timerId].notified5min && timers[timerId].remaining === 300) {
-      timers[timerId].notified5min = true;
-      notifyUser(
-        timers[timerId].name,
-        `5 minutes remaining, the ${timers[timerId].name} will spawn soon.`,
-        timers[timerId].image
-      );
-      playNotificationSound();
-    }
-
-    if (!timers[timerId].notified30s && timers[timerId].remaining === 30) {
-      timers[timerId].notified30s = true;
-      notifyUser(
-        timers[timerId].name,
-        `30 seconds remaining, the ${timers[timerId].name} will spawn very soon!`,
-        timers[timerId].image
-      );
-      playNotificationSound();
-    }
-
-    updateDisplay(timerId);
-  }, 1000);
-
-  updateDisplay(timerId);
+  timers[timerId].interval = setInterval(() => updateTimer(timerId), 500);
+  updateTimer(timerId);
 }
 
-// === Update Display ===
-function updateDisplay(timerId) {
-  const display = document.getElementById(`${timerId}-display`);
-  const h = Math.floor(timers[timerId].remaining / 3600);
-  const m = Math.floor((timers[timerId].remaining % 3600) / 60);
-  const s = timers[timerId].remaining % 60;
+// === Update Timer ===
+function updateTimer(timerId) {
+  const now = Date.now();
+  const remaining = Math.floor((timers[timerId].endTime - now) / 1000);
 
-  display.textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (remaining <= 0) {
+    clearInterval(timers[timerId].interval);
+    document.getElementById(`${timerId}-display`).textContent = "00:00:00";
+    notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
+    playNotificationSound();
+    return;
+  }
+
+  // Alerts
+  if (!timers[timerId].notified5min && remaining === 300) {
+    timers[timerId].notified5min = true;
+    notifyUser(timers[timerId].name, `5 minutes remaining, ${timers[timerId].name} will spawn soon!`, timers[timerId].image);
+    playNotificationSound();
+  }
+
+  if (!timers[timerId].notified30s && remaining === 30) {
+    timers[timerId].notified30s = true;
+    notifyUser(timers[timerId].name, `30 seconds remaining, ${timers[timerId].name} will spawn very soon!`, timers[timerId].image);
+    playNotificationSound();
+  }
+
+  const h = Math.floor(remaining / 3600);
+  const m = Math.floor((remaining % 3600) / 60);
+  const s = remaining % 60;
+
+  document.getElementById(`${timerId}-display`).textContent =
+    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 // === Notifications ===
 function notifyUser(timerName, message, icon) {
-  if (!('Notification' in window)) return;
+  if (!("Notification" in window)) return;
 
-  if (Notification.permission === 'granted') {
+  if (Notification.permission === "granted") {
     if (swRegistration) {
       swRegistration.showNotification(timerName, {
         body: message,
-        icon: icon || 'images/Phreeoni.png'
+        icon: icon || "images/Phreeoni.png"
       });
     } else {
-      new Notification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
+      new Notification(timerName, { body: message, icon: icon || "images/Phreeoni.png" });
     }
-  } else if (Notification.permission !== 'denied') {
+  } else if (Notification.permission !== "denied") {
     Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        if (swRegistration) {
-          swRegistration.showNotification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
-        } else {
-          new Notification(timerName, { body: message, icon: icon || 'images/Phreeoni.png' });
-        }
+      if (permission === "granted") {
+        new Notification(timerName, { body: message, icon: icon || "images/Phreeoni.png" });
       }
     });
   }
@@ -254,23 +209,22 @@ function showCategory(category) {
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
   // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js")
       .then(reg => {
-        console.log('Service Worker registered');
-        swRegistration = reg; // store globally
+        console.log("Service Worker registered");
+        swRegistration = reg;
       })
-      .catch(err => console.log('Service Worker registration failed:', err));
+      .catch(err => console.log("Service Worker registration failed:", err));
   }
 
   // Request Notification Permission
-  if ('Notification' in window && Notification.permission !== 'granted') {
+  if ("Notification" in window && Notification.permission !== "granted") {
     Notification.requestPermission().then(permission => {
-      console.log('Notification permission:', permission);
+      console.log("Notification permission:", permission);
     });
   }
 
-  // Render first category
+  // Render initial category
   renderCategory(1);
 });
-
