@@ -49,11 +49,11 @@ function createTimerElement(timerData, index, category) {
     </div>
     <div class="timer-display" id="${timerId}-display">00:00:00</div>
     <div class="timer-inputs">
-      <input type="number" id="${timerId}-hours" min="0" value="00">
+      <input type="number" id="${timerId}-hours" min="0" value="">
       :
-      <input type="number" id="${timerId}-minutes" min="0" max="59" value="00" oninput="validateTwoDigit(this)">
+      <input type="number" id="${timerId}-minutes" min="0" max="59" value="" oninput="validateTwoDigit(this)">
       :
-      <input type="number" id="${timerId}-seconds" min="0" max="59" value="00" oninput="validateTwoDigit(this)">
+      <input type="number" id="${timerId}-seconds" min="0" max="59" value="" oninput="validateTwoDigit(this)">
     </div>
     <div class="timer-buttons">
       <button class="start-btn" onclick="startTimer('${timerId}')">Start</button>
@@ -115,9 +115,9 @@ function startTimer(timerId) {
   timers[timerId].notified5min = false;
   timers[timerId].notified30s = false;
 
-  hours.value = "00";
-  minutes.value = "00";
-  seconds.value = "00";
+  hours.value = "";
+  minutes.value = "";
+  seconds.value = "";
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
@@ -273,3 +273,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // Render first category
   renderCategory(1);
 });
+
