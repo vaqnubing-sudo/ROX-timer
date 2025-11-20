@@ -122,7 +122,6 @@ function startTimer(timerId) {
 
   // Update display first, then wait 1 second before decreasing
   updateTimer(timerId);
-  timers[timerId].interval = setInterval(() => updateTimer(timerId), 1000);
 }
 
 // === Reset Timer ===
@@ -138,7 +137,6 @@ function resetTimer(timerId) {
 
   // Update display first, then wait 1 second before decreasing
   updateTimer(timerId);
-  timers[timerId].interval = setInterval(() => updateTimer(timerId), 1000);
 }
 
 // === Update Timer ===
@@ -227,8 +225,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // === Ultra Accurate Timer Loop ===
+function accurateLoop() {
+  Object.keys(timers).forEach(timerId => {
+    if (timers[timerId].endTime) {
+      updateTimer(timerId);
+    }
+  });
+  requestAnimationFrame(accurateLoop);  // Runs 60 times per second without drift
+}
+accurateLoop();
+
   // Render initial category
   renderCategory(1);
 });
+
 
 
