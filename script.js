@@ -1,3 +1,44 @@
+    // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+  import { getFirestore, doc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js';
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js';
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCATqPv1ONxKANxiU0QWcVKSzM3b6UZOOA",
+    authDomain: "rox-timer-b91c1.firebaseapp.com",
+    projectId: "rox-timer-b91c1",
+    storageBucket: "rox-timer-b91c1.firebasestorage.app",
+    messagingSenderId: "255672028078",
+    appId: "1:255672028078:web:934fea32cafad200c7963f",
+    measurementId: "G-L379Z8WE7J"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+const auth = getAuth(app);
+
+let isOwner = false; // track if current user is owner
+const timerRef = doc(db, "timers", "rox-main"); // Firestore document for shared timer
+
+// Login owner
+window.ownerLogin = async function () {
+  const email = prompt("Owner email:");
+  const password = prompt("Password:");
+  await signInWithEmailAndPassword(auth, email, password);
+};
+
+onAuthStateChanged(auth, (user) => {
+  isOwner = !!user;
+  document.body.classList.toggle("owner", isOwner);
+});
+
 // === Timer Data ===
 const category1Timers = [
   { name: "Phreeoni", image: "images/Phreeoni.png" },
@@ -99,8 +140,8 @@ function renderCategory(category) {
   activeCategory = category;
 }
 
-// === Start Timer ===
-function startTimer(timerId) {
+// === Start Timer (with Firebase sync) ===
+async function startTimer(timerId) {
   const hours = parseInt(document.getElementById(`${timerId}-hours`).value || "0");
   const minutes = parseInt(document.getElementById(`${timerId}-minutes`).value || "0");
   const seconds = parseInt(document.getElementById(`${timerId}-seconds`).value || "0");
@@ -113,16 +154,44 @@ function startTimer(timerId) {
   timers[timerId].notified5min = false;
   timers[timerId].notified30s = false;
 
-  // Clear fields after start
+  // Clear input fields after start
   document.getElementById(`${timerId}-hours`).value = "";
   document.getElementById(`${timerId}-minutes`).value = "";
   document.getElementById(`${timerId}-seconds`).value = "";
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  // Update display first, then wait 1 second before decreasing
+  // Update display immediately
   updateTimer(timerId);
+
+  // ===============================
+  // Push endTime to Firebase if owner
+  // ===============================
+  if (isOwner) {
+    try {
+      await updateDoc(timerRef, { endsAt: timers[timerId].endTime });
+      console.log("Firebase timer updated successfully!");
+    } catch (err) {
+      console.error("Firebase update failed:", err);
+    }
+  }
 }
+
+onSnapshot(timerRef, (snap) => {
+  if (!snap.exists()) return;
+  const sharedEndTime = snap.data().endsAt;
+
+  // Apply to the first timer (or choose a specific timer)
+  const timerId = Object.keys(timers)[0];
+  timers[timerId].endTime = sharedEndTime;
+
+  // Reset notifications
+  timers[timerId].notified5min = false;
+  timers[timerId].notified30s = false;
+
+  // Update display immediately
+  updateTimer(timerId);
+});
 
 // === Reset Timer ===
 function resetTimer(timerId) {
@@ -239,6 +308,7 @@ accurateLoop();
   // Render initial category
   renderCategory(1);
 });
+
 
 
 
