@@ -86,8 +86,8 @@ function createTimerElement(timerData, index, category) {
       <input type="number" id="${timerId}-seconds" min="0" max="59" placeholder="SS" oninput="validateTwoDigit(this)">
     </div>
     <div class="timer-buttons">
-      <button onclick="startTimer('${timerId}')">Start</button>
-      <button onclick="resetTimer('${timerId}')">Reset</button>
+      <button class="start-btn" onclick="startTimer('${timerId}')">Start</button>
+      <button class="reset-btn" onclick="resetTimer('${timerId}')">Reset</button>
     </div>
   `;
   return card;
@@ -201,3 +201,4 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   renderCategory(1);
 });
+
