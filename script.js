@@ -38,6 +38,7 @@ function createTimerElement(timerData, index, category) {
     interval: null,
     notified5min: false,
     notified30s: false
+    finished: false
   };
 
   const card = document.createElement("div");
@@ -145,12 +146,20 @@ function updateTimer(timerId) {
   const remaining = Math.floor((timers[timerId].endTime - now) / 1000);
 
   if (remaining <= 0) {
-    clearInterval(timers[timerId].interval);
+  if (!timers[timerId].finished) {
+    timers[timerId].finished = true;
+    timers[timerId].endTime = null; // ✅ STOP future updates
+
     document.getElementById(`${timerId}-display`).textContent = "00:00:00";
-    notifyUser(timers[timerId].name, `${timers[timerId].name} is already spawned!`, timers[timerId].image);
+    notifyUser(
+      timers[timerId].name,
+      `${timers[timerId].name} is already spawned!`,
+      timers[timerId].image
+    );
     playNotificationSound();
-    return;
   }
+  return;
+}
 
   // Alerts
   if (!timers[timerId].notified5min && remaining === 300) {
@@ -239,6 +248,7 @@ accurateLoop();
   // Render initial category
   renderCategory(1);
 });
+
 
 
 
