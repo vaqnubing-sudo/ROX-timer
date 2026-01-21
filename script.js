@@ -26,6 +26,8 @@ let activeCategory = 1;
 const timers = {};
 let swRegistration = null; // Service Worker Registration
 
+const sentNotifications = new Set();
+
 // === Create Timer Card ===
 function createTimerElement(timerData, index, category) {
   const timerId = `timer-${category}-${index}`;
@@ -40,6 +42,15 @@ function createTimerElement(timerData, index, category) {
     notified30s: false
     finished: false
   };
+
+function notifyOnce(timerId, type, message, icon) {
+  const key = `${timerId}-${type}`;
+  if (sentNotifications.has(key)) return;
+
+  sentNotifications.add(key);
+  notifyUser(timers[timerId].name, message, icon);
+  playNotificationSound();
+}
 
   const card = document.createElement("div");
   card.className = "timer-card";
@@ -111,8 +122,16 @@ function startTimer(timerId) {
 
   const now = Date.now();
   timers[timerId].endTime = now + totalSeconds * 1000;
+
+  // ✅ ADD THESE LINES
+  timers[timerId].finished = false;
   timers[timerId].notified5min = false;
   timers[timerId].notified30s = false;
+
+  // ✅ CLEAR old notifications for THIS timer
+  [...sentNotifications]
+    .filter(k => k.startsWith(timerId))
+    .forEach(k => sentNotifications.delete(k));
 
   // Clear fields after start
   document.getElementById(`${timerId}-hours`).value = "";
@@ -121,44 +140,91 @@ function startTimer(timerId) {
 
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  // Update display first, then wait 1 second before decreasing
   updateTimer(timerId);
 }
 
 // === Reset Timer ===
 function resetTimer(timerId) {
-  // MVP (Category 1) = 2:59:50 = 10790 seconds
-  // Mini (Category 2) = 1:59:50 = 7190 seconds
   const defaultSeconds = timers[timerId].category === 1 ? 10790 : 7190;
   timers[timerId].endTime = Date.now() + defaultSeconds * 1000;
+
+  // ✅ ADD THESE LINES
+  timers[timerId].finished = false;
   timers[timerId].notified5min = false;
   timers[timerId].notified30s = false;
 
+  // ✅ CLEAR old notifications for THIS timer
+  [...sentNotifications]
+    .filter(k => k.startsWith(timerId))
+    .forEach(k => sentNotifications.delete(k));
+
+  closeAllNotifications();
+  
   if (timers[timerId].interval) clearInterval(timers[timerId].interval);
 
-  // Update display first, then wait 1 second before decreasing
   updateTimer(timerId);
+}
+
+function closeAllNotifications() {
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (!reg) return;
+    reg.getNotifications().then(notifs => {
+      notifs.forEach(n => n.close());
+    });
+  });
 }
 
 // === Update Timer ===
 function updateTimer(timerId) {
+  const timer = timers[timerId];
+
+  // STOP if already finished or not running
+  if (!timer.endTime || timer.finished) return;
+
   const now = Date.now();
-  const remaining = Math.floor((timers[timerId].endTime - now) / 1000);
+  const remaining = Math.floor((timer.endTime - now) / 1000);
 
   if (remaining <= 0) {
-  if (!timers[timerId].finished) {
-    timers[timerId].finished = true;
-    timers[timerId].endTime = null; // ✅ STOP future updates
+    timer.finished = true;
+    timer.endTime = null;
 
     document.getElementById(`${timerId}-display`).textContent = "00:00:00";
-    notifyUser(
-      timers[timerId].name,
-      `${timers[timerId].name} is already spawned!`,
-      timers[timerId].image
+
+    notifyOnce(
+      timerId,
+      "spawned",
+      `${timer.name} is already spawned!`,
+      timer.image
     );
-    playNotificationSound();
+    return;
   }
-  return;
+
+  if (remaining === 300 && !timer.notified5min) {
+    timer.notified5min = true;
+    notifyOnce(
+      timerId,
+      "5min",
+      `5 minutes remaining, ${timer.name} will spawn soon!`,
+      timer.image
+    );
+  }
+
+  if (remaining === 30 && !timer.notified30s) {
+    timer.notified30s = true;
+    notifyOnce(
+      timerId,
+      "30s",
+      `30 seconds remaining, ${timer.name} will spawn very soon!`,
+      timer.image
+    );
+  }
+
+  const h = Math.floor(remaining / 3600);
+  const m = Math.floor((remaining % 3600) / 60);
+  const s = remaining % 60;
+
+  document.getElementById(`${timerId}-display`).textContent =
+    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
   // Alerts
@@ -248,6 +314,7 @@ accurateLoop();
   // Render initial category
   renderCategory(1);
 });
+
 
 
 
