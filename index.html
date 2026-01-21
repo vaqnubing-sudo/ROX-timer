@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4CAF50">
-  
+  <meta name="theme-color" content="#4CAF50">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MVP/Mini Spawn Timer</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide-icons"></script>
+  <script src="https://unpkg.com/lucide-icons" defer></script>
 </head>
+<body>
+
   <button id="installBtn" style="display:none;">Install ROX Timer</button>
 
   <!-- Header -->
@@ -38,20 +39,11 @@
   <!-- Notification Sound -->
   <audio id="notificationSound" src="notification.mp3" preload="auto"></audio>
 
-  <script src="script.js"></script>
-  <script>
+  <!-- Scripts -->
+  <script src="script.js" defer></script>
+  <script defer>
     lucide.createIcons();
   </script>
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
