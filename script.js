@@ -139,7 +139,7 @@ function startTimer(timerId) {
 }
 
 function resetTimer(timerId) {
-  const defaultSeconds = timers[timerId].category===1?10790:7190;
+  const defaultSeconds = timers[timerId].category===1?10795:7195;
   timers[timerId].endTime = Date.now()+defaultSeconds*1000;
   timers[timerId].finished=false;
   timers[timerId].notified5min=false;
@@ -201,4 +201,5 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   renderCategory(1);
 });
+
 
