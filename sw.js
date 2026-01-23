@@ -1,52 +1,70 @@
 // sw.js - Service Worker
 
-// Install event
-self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installed');
-  self.skipWaiting(); // Activate immediately
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
-// Activate event
-self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activated');
-  return self.clients.claim();
+self.addEventListener('activate', () => {
+  self.clients.claim();
 });
 
-// Listen for push messages from your main app
+// Push event (FCM / Web Push)
 self.addEventListener('push', (event) => {
-  let data = {
-    title: 'Timer',
-    body: 'Timer finished!',
-    icon: 'images/Phreeoni.png'
+  let payload = {
+    title: 'Timer Alert',
+    body: 'Your timer is about to finish.',
+    icon: '/images/Phreeoni.png',
+    url: '/'
   };
 
   if (event.data) {
-    data = event.data.json();
+    const data = event.data.json();
+
+    // Handle both notification & data payloads
+    payload.title = data.title || data.notification?.title || payload.title;
+    payload.body  = data.body  || data.notification?.body  || payload.body;
+    payload.icon  = data.icon  || payload.icon;
+    payload.url   = data.url   || payload.url;
   }
 
   const options = {
-    body: data.body,
-    icon: data.icon,
-    badge: data.icon,
+    body: payload.body,
+    icon: payload.icon,
+    badge: payload.icon,
     vibrate: [200, 100, 200],
-    tag: 'timer-notification'
+    tag: 'timer-alert',
+    requireInteraction: true, // IMPORTANT for timers
+    data: {
+      url: payload.url
+    },
+    actions: [
+      { action: 'open', title: 'Open App' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(payload.title, options)
   );
 });
 
-// Notification click event
+// Notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  if (event.action === 'dismiss') return;
+
+  const url = event.notification.data?.url || '/';
+
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((clientList) => {
-      if (clientList.length > 0) {
-        clientList[0].focus();
-      } else {
-        self.clients.openWindow('https://vaqnubing-sudo.github.io/ROX-timer/');
-      }
-    })
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(url)) {
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      })
   );
 });
