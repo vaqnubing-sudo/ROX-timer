@@ -186,35 +186,29 @@ function updateTimer(timerId) {
 function showCategory(c){renderCategory(c)}
 
 // === Init ===
-document.addEventListener("DOMContentLoaded",()=>{
-  if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("sw.js").then(r=>swRegistration=r).catch(()=>{});
+document.addEventListener("DOMContentLoaded", () => {
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/ROX-timer/sw.js")
+      .then(r => { swRegistration = r; console.log("SW registered with scope:", r.scope); })
+      .catch(err => console.error("SW registration failed:", err));
   }
 
-  if("Notification" in window && Notification.permission!=="granted"){
+  if ("Notification" in window && Notification.permission !== "granted") {
     Notification.requestPermission();
   }
 
   // Main loop
-  function loop(){Object.keys(timers).forEach(tid=>updateTimer(tid)); requestAnimationFrame(loop);}
+  function loop() {
+    Object.keys(timers).forEach(tid => updateTimer(tid));
+    requestAnimationFrame(loop);
+  }
   loop();
 
   renderCategory(1);
-
-  if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/ROX-timer/sw.js')
-      .then((registration) => {
-        console.log('Service Worker registered with scope:', registration.scope);
-      })
-      .catch((error) => {
-        console.error('Service Worker registration failed:', error);
-      });
-  });
-}
-  
 });
+
+
 
 
 
