@@ -37,6 +37,9 @@ function notifyOnce(timerId, type, message, icon) {
 }
 
 function notifyUser(timerName, message, icon) {
+   // Website popup
+  showToast(timerName, message, icon);
+  
   if (!("Notification" in window)) return;
 
   if (Notification.permission === "granted") {
@@ -55,6 +58,31 @@ function notifyUser(timerName, message, icon) {
 function playNotificationSound() {
   const sound = document.getElementById("notificationSound");
   if (sound) sound.play();
+}
+
+// === Website Toast ===
+function showToast(title, message, icon, duration = 5000) {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+
+  toast.innerHTML = `
+    <img src="${icon}" alt="">
+    <div>
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    setTimeout(() => toast.remove(), 400);
+  }, duration);
 }
 
 // === Create Timer Card ===
@@ -207,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
