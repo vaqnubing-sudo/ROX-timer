@@ -67,7 +67,7 @@ function playNotificationSound() {
 }
 
 // === Website Toast ===
-function showToast(title, message, icon, duration = 5000) {
+function showToast(title, message, icon, duration = 10000) {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
@@ -241,6 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
