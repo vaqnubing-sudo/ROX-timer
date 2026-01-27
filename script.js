@@ -27,19 +27,25 @@ const timers = {};
 const sentNotifications = new Set();
 let swRegistration = null;
 
+let soundForPCNotification = true;
+let soundForToastNotification = false;
+
 // === Notifications ===
 function notifyOnce(timerId, type, message, icon) {
   const key = `${timerId}-${type}`;
   if (sentNotifications.has(key)) return;
   sentNotifications.add(key);
   notifyUser(timers[timerId].name, message, icon);
-  playNotificationSound();
 }
 
 function notifyUser(timerName, message, icon) {
-   // Website popup
+
+  // Toast popup
   showToast(timerName, message, icon);
-  
+  if (soundForToastNotification) {
+    playNotificationSound();
+  }
+
   if (!("Notification" in window)) return;
 
   if (Notification.permission === "granted") {
@@ -48,10 +54,10 @@ function notifyUser(timerName, message, icon) {
     } else {
       new Notification(timerName, { body: message, icon });
     }
-  } else if (Notification.permission !== "denied") {
-    Notification.requestPermission().then(p => {
-      if (p === "granted") new Notification(timerName, { body: message, icon });
-    });
+
+    if (soundForPCNotification) {
+      playNotificationSound();
+    }
   }
 }
 
@@ -235,6 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
