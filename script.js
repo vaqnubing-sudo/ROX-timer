@@ -40,6 +40,11 @@ function notifyOnce(timerId, type, message, icon) {
 
 function notifyUser(timerName, message, icon) {
 
+  // Tell the WinForms host to play the sound
+    if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage("playSound");
+    }
+
   // Toast popup
   showToast(timerName, message, icon);
   if (soundForToastNotification) {
@@ -245,6 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
