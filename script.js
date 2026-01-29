@@ -99,8 +99,9 @@ function createTimerElement(timerData, index, category) {
     name: timerData.name,
     image: timerData.image,
     category,
+    notified15min: false,
     notified5min: false,
-    notified30s: false,
+    notified10s: false,
     finished: false
   };
 
@@ -160,8 +161,9 @@ function startTimer(timerId) {
 
   timers[timerId].endTime = Date.now() + total*1000;
   timers[timerId].finished=false;
+  timers[timerId].notified15min=false;
   timers[timerId].notified5min=false;
-  timers[timerId].notified30s=false;
+  timers[timerId].notified10s=false;
 
   // clear old notifications
   [...sentNotifications].filter(k=>k.startsWith(timerId)).forEach(k=>sentNotifications.delete(k));
@@ -176,8 +178,9 @@ function resetTimer(timerId) {
   const defaultSeconds = timers[timerId].category===1?10790:7190;
   timers[timerId].endTime = Date.now()+defaultSeconds*1000;
   timers[timerId].finished=false;
+  timers[timerId].notified15min=false;
   timers[timerId].notified5min=false;
-  timers[timerId].notified30s=false;
+  timers[timerId].notified10s=false;
 
   [...sentNotifications].filter(k=>k.startsWith(timerId)).forEach(k=>sentNotifications.delete(k));
   closeAllNotifications();
@@ -209,8 +212,9 @@ function updateTimer(timerId) {
     return;
   }
 
+  if (rem === 900 && !t.notified15min) notifyOnce(timerId, "15min", `15 minutes remaining, ${t.name} will spawn soon!`, t.image);
   if(rem===300 && !t.notified5min) notifyOnce(timerId,"5min",`5 minutes remaining, ${t.name} will spawn soon!`, t.image);
-  if(rem===30 && !t.notified30s) notifyOnce(timerId,"30s",`30 seconds remaining, ${t.name} will spawn very soon!`, t.image);
+  if(rem===10 && !t.notified10s) notifyOnce(timerId,"30s",`30 seconds remaining, ${t.name} will spawn very soon!`, t.image);
 
   const h = Math.floor(rem/3600), m=Math.floor((rem%3600)/60), s=rem%60;
   display.textContent=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
@@ -241,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
