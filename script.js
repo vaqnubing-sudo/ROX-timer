@@ -180,7 +180,7 @@ function startTimer(timerId) {
 }
 
 function resetTimer(timerId) {
-  const defaultSeconds = timers[timerId].category===1?10790:7190;
+  const defaultSeconds = timers[timerId].category===1?10800:7200;
   timers[timerId].endTime = Date.now()+defaultSeconds*1000;
   timers[timerId].finished=false;
   timers[timerId].notified15min=false;
@@ -219,7 +219,7 @@ function updateTimer(timerId) {
 
   if (rem === 900 && !t.notified15min) notifyOnce(timerId, "15min", `15 minutes remaining, ${t.name} will spawn soon!`, t.image);
   if(rem===300 && !t.notified5min) notifyOnce(timerId,"5min",`5 minutes remaining, ${t.name} will spawn soon!`, t.image);
-  if(rem===10 && !t.notified10s) notifyOnce(timerId,"30s",`30 seconds remaining, ${t.name} will spawn very soon!`, t.image);
+  if(rem===10 && !t.notified10s) notifyOnce(timerId,"30s",`10 seconds remaining, ${t.name} will spawn very soon!`, t.image);
 
   const h = Math.floor(rem/3600), m=Math.floor((rem%3600)/60), s=rem%60;
   display.textContent=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
@@ -250,6 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
