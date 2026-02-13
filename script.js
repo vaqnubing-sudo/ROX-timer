@@ -42,13 +42,8 @@ function notifyUser(timerName, message, icon) {
 
   // Tell the WinForms host to play the sound
     if (window.chrome && window.chrome.webview) {
-    window.chrome.webview.postMessage(JSON.stringify({
-        type: "bossAlert",
-        boss: timerName,
-        message: message,
-        icon: icon
-    }));
-}
+        window.chrome.webview.postMessage("playSound");
+    }
 
   // Toast popup
   showToast(timerName, message, icon);
@@ -255,6 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderCategory(1);
 });
+
 
 
 
